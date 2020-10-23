@@ -15,6 +15,10 @@
             margin-right: 30px;
             margin-top: 30px;
         }
+        select {
+            height: 300px;
+            padding-right: 10px;
+        }
     </style>
 
 </head>
@@ -25,31 +29,31 @@
     <form action="" method="post" size="10" onsubmit="return false">
         <label for="features">Filter by Features: <br /> </label>
         <select id="features" multiple>
-            <option value="ANALOGIN">Analog Inputs</option>
-            <option value="LPTICKER">Low-Power Ticker</option>
-            <option value="I2C">I²C</option>
-            <option value="I2CSLAVE">I²C Slave</option>
-            <option value="INTERRUPTIN">Interrupt Inputs</option>
-            <option value="USTICKER">Microsecond Ticker</option>
-            <option value="PORTIN">Full-Port Input</option>
-            <option value="PORTINOUT">Full-Port I/O</option>
-            <option value="PORTOUT">Full-Port Output</option>
-            <option value="RESET_REASON">Reset Reason</option>
-            <option value="RTC">Real-Time Clock</option>
-            <option value="SERIAL">Serial</option>
-            <option value="SERIAL_FC">Serial Flow Control</option>
+            <option value="Analog Inputs">Analog Inputs</option>
+            <option value="Low-Power Ticker">Low-Power Ticker</option>
+            <option value="I²C">I²C</option>
+            <option value="I²C Slave">I²C Slave</option>
+            <option value="Interrupt Inputs">Interrupt Inputs</option>
+            <option value="Microsecond Ticker">Microsecond Ticker</option>
+            <option value="Full-Port Input">Full-Port Input</option>
+            <option value="Full-Port I/O">Full-Port I/O</option>
+            <option value="Full-Port Output">Full-Port Output</option>
+            <option value="Reset Reason">Reset Reason</option>
+            <option value="Real-Time Clock">Real-Time Clock</option>
+            <option value="Serial">Serial</option>
+            <option value="Serial Flow Control">Serial Flow Control</option>
             <option value="SPI">SPI</option>
-            <option value="SPISLAVE">SPI Slave</option>
-            <option value="SPI_ASYNCH">Asynchronous SPI</option>
-            <option value="WATCHDOG" Watchdog Timer></option>
+            <option value="SPI Slave">SPI Slave</option>
+            <option value="Asynchronous SPI">Asynchronous SPI</option>
+            <option value="Watchdog Timer">Watchdog Timer</option>
         </select>
         <br><br>
-        <input type="submit" onclick="getFeatures()" value="Filter">
+        <input type="submit" onclick="renderTable()" value="Filter">
     </form>
 
-    <p> </p>
+    <p id="activefilters"> </p>
 
-    <h3> Loaded <span id="targetnum">0</span> targets</h3>
+    <h3> Matched <span id="targetnum">0</span> targets</h3>
     <table id="datatable" class="ui sortable celled table"></table>
 
     <script>
@@ -99,12 +103,12 @@
             "GigaDevice": "GigaDevice",
         }
 
+        var filtFeatures;
         function displayVals() {
-            var filtFeatures = $("#features").val() || [];
+            filtFeatures = $("#features").val() || [];
             // When using jQuery 3:
             // var multipleValues = $( "#multiple" ).val();
-            $("p").html(" <b>Active Filters:</b> " + filtFeatures.join(", "));
-            return filtFeatures;
+            $("p#activefilters").html(" <b>Active Filters:</b> " + filtFeatures.join(", "));
         }
 
         $("select").change(displayVals);
@@ -189,13 +193,6 @@
                 var filtFeatures = displayVals();
                 console.log(displayVals());
 
-                // filter out targets that do not have the required features
-                for (feature in filtFeatures) {
-                    if (!(filtFeatures[feature] in targetDefinition["Supported Features"])) {
-                       continue;
-                    }
-                }
-
                 // convert JSON feature names to human readable
                 for (featureIdx in targetDefinition["Supported Features"]) {
                     if (targetDefinition["Supported Features"][featureIdx] in humanReadableFeatureNames) {
@@ -220,6 +217,7 @@
             }
         }
 
+        // Redraw the table, taking the current filters into account
         function renderTable() {
 
             table = "<thead>"
@@ -236,9 +234,25 @@
             table += "</thead>";
             table += "<tbody>";
 
-            // draw element rows
-            for (targetIdx in targetList) {
+            var matchedTargets = 0;
 
+            // draw element rows
+            for (targetIdx in targetList) 
+            {
+                // filter out targets that do not have the required features
+                var missingFeatures = false;
+                for (feature in filtFeatures) {
+                    if (!targetList[targetIdx]["Supported Features"].includes(filtFeatures[feature])) {
+                       missingFeatures = true;
+                       break;
+                    }
+                }
+                if(missingFeatures)
+                {
+                    continue;
+                }
+
+                matchedTargets++;
                 table += "<tr>";
                 for (columnIdx in table_cols) {
                     if (columnIdx == 1) {
@@ -282,7 +296,7 @@
 
             // replace current contents
             document.getElementById("datatable").innerHTML = table;
-            $("#targetnum").html(targetList.length)
+            $("#targetnum").html(matchedTargets)
 
             // resort
             $("#datatable").tablesort()
