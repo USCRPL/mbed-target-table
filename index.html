@@ -19,6 +19,14 @@
             height: 300px;
             padding-right: 10px;
         }
+        div#filter-container {
+            overflow: auto;
+            padding-bottom: 20px;
+        }
+        div#filter-container>div {
+            float: left;
+            padding-left: 20px;
+        }
     </style>
 
 </head>
@@ -26,15 +34,20 @@
 <body>
     <h1> Mbed OS Target Viewer</h1>
 
-    <label for="features">Filter by Features: <br /> </label>
-    <select id="features" multiple>
-    </select>
-    <br><br>
+    <div id="filter-container">
 
-    <label for="manufacturers">Filter by Manufaturer: <br /> </label>
-    <select id="manufacturers" multiple>
-    </select>
-    <br><br>
+        <div>
+            <label for="features">Filter by Features: <br /> </label>
+            <select id="features" multiple>
+            </select>
+        </div>
+
+        <div>
+            <label for="manufacturers">Filter by Manufaturer: <br /> </label>
+            <select id="manufacturers" multiple>
+            </select>
+        </div>
+    </div>
 
     <input type="submit" onclick="renderTable()" value="Filter">
 
@@ -52,7 +65,15 @@
 
         // Maps JSON name of feature to a human readable form
         var humanReadableFeatureNames = {
+            "802_15_4_PHY": "802.15.4 Radio", // TODO: is this accurate?
             "ANALOGIN": "Analog Inputs",
+            "ANALOGOUT": "Analog Outputs",
+            "CAN": "CAN",
+            "DEBUG_AWARENESS": "Semihost Detectable",
+            "EMAC": "Ethernet MAC",
+            "ETHERNET": "Ethernet PHY", // TODO: ignore this one since it is not accurate
+            "FLASH": "Onboard Flash",
+            "LOCALFILESYSTEM": "MBED Disk Access from App",
             "LPTICKER": "Low-Power Ticker",
             "I2C": "I²C",
             "I2CSLAVE": "I²C Slave",
@@ -62,13 +83,18 @@
             "PORTIN": "Full-Port Input",
             "PORTINOUT": "Full-Port I/O",
             "PORTOUT": "Full-Port Output",
+            "PWMOUT": "PWM Out",
             "RESET_REASON": "Reset Reason",
             "RTC": "Real-Time Clock",
+            "SEMIHOST": "Semihost", // TODO: ignore this one since it is not accurate
             "SERIAL": "Serial",
             "SERIAL_FC": "Serial Flow Control",
+            "SLEEP": "Sleep",
             "SPI": "SPI",
             "SPISLAVE": "SPI Slave",
             "SPI_ASYNCH": "Asynchronous SPI",
+            "STDIO_MESSAGES": "Stdout",
+            "USBDEVICE": "USB Device",
             "WATCHDOG": "Watchdog Timer",
         }
 
@@ -180,7 +206,6 @@
                 copyTargetProperties(targetDefinition, targetJson, targetName);
 
                 var filtFeatures = displayVals();
-                console.log(displayVals());
 
                 // convert JSON feature names to human readable
                 for (featureIdx in targetDefinition["Supported Features"]) {
