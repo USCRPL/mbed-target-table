@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Mbed Target Viewer</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
+    <script src="https://semantic-ui.com/javascript/library/tablesort.js"></script>
+
+    <style>
+        body {
+            margin-left: 30px;
+            margin-right: 30px;
+            margin-top: 30px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <h1> Mbed OS Target Viewer</h1>
+
+    <table id="datatable" class="ui sortable celled table"></table>
+
+    <script>
+
+        // cols of the table
+        table_cols = ["Target Name", "CPU Name", "Supported Features", "Board Components"]
+
+        var targetList = [];
+
+        // Maps JSON name of feature to a human readable form
+        var humanReadableFeatureNames = {
+            "ANALOGIN": "Analog Inputs",
+            "LPTICKER": "Low-Power Ticker",
+            "I2C": "I²C",
+            "I2CSLAVE": "I²C Slave",
+            "I2C_ASYNCH": "Asynchronous I²C",
+            "INTERRUPTIN": "Interrupt Inputs",
+            "USTICKER": "Microsecond Ticker",
+            "PORTIN": "Full-Port Input",
+            "PORTINOUT": "Full-Port I/O",
+            "PORTOUT": "Full-Port Output",
+            "RESET_REASON": "Reset Reason",
+            "RTC": "Real-Time Clock",
+            "SERIAL": "Serial",
+            "SERIAL_FC": "Serial Flow Control",
+            "SPI": "SPI",
+            "SPISLAVE": "SPI Slave",
+            "SPI_ASYNCH": "Asynchronous SPI",
+            "WATCHDOG": "Watchdog Timer",
+        }
+
+        // Copy a single aggregate property over to the definition.
+        // These properties can be defined at multiple levels and must be merged together.
+        function copyAggregateProperty(definition, definitionPropName, targetJson, targetName, propertyName)
+        {
+            // Property name by itself replaces the current value
+            if(propertyName in targetJson[targetName])
+            {
+                definition[definitionPropName] = targetJson[targetName][propertyName];
+            }
+            // _add adds to the current value
+            if(propertyName + "_add" in targetJson[targetName])
+            {
+                definition[definitionPropName] = definition[definitionPropName].concat(targetJson[targetName][propertyName + "_add"]);
+            }
+            // _remove subtracts from the current value
+            if(propertyName + "_remove" in targetJson[targetName])
+            {
+                // from here: https://stackoverflow.com/questions/45342155/how-to-subtract-one-array-from-another-element-wise-in-javascript
+                definition[definitionPropName] = definition[definitionPropName].filter(
+                    item => !targetJson[targetName][propertyName + "_remove"].includes(item));
+            }
+        }
+
+        // Copy the relevant data from the JSON definition into the given
+        // object.
+        function copyTargetProperties(definition, targetJson, targetName)
+        {
+            // First handle superclasses of this target.
+            // Follows Mbed OS "high to low, left to right" parser order
+            if("inherits" in targetJson[targetName])
+            {
+                for(superclassIdx in targetJson[targetName]["inherits"])
+                {
+                    copyTargetProperties(definition, targetJson, targetJson[targetName]["inherits"][superclassIdx]);
+                }
+            }
+
+            if("device_name" in targetJson[targetName])
+            {
+                definition["CPU Name"] = targetJson[targetName]["device_name"];
+            }
+
+            copyAggregateProperty(definition, "Supported Features", targetJson, targetName, "device_has");
+            copyAggregateProperty(definition, "Board Components", targetJson, targetName, "components");
+
+        }
+
+        // Build the list of targets using the raw JSON file.
+        // Resolves inheritance declarations and flattens the tree
+        // into a list.
+        function buildTargetList(targetJson)
+        {
+            for(targetName in targetJson)
+            {
+                // If the target does not have the "device_name" property then it is
+                // a super-type, not an actual target board
+                if(!("device_name" in targetJson[targetName]))
+                {
+                    continue;
+                }
+
+                var targetDefinition = {"Target Name": targetName}
+
+                copyTargetProperties(targetDefinition, targetJson, targetName);
+
+                // convert JSON feature names to human readable
+                for(featureIdx in targetDefinition["Supported Features"])
+                {
+                    if(targetDefinition["Supported Features"][featureIdx] in humanReadableFeatureNames)
+                    {
+                        targetDefinition["Supported Features"][featureIdx] = humanReadableFeatureNames[targetDefinition["Supported Features"][featureIdx]];
+                    }
+                }
+
+                targetList.push(targetDefinition);
+            }
+        }
+
+        function renderTable()
+        {
+
+            table = "<thead>"
+
+            // draw header row
+            table += "<tr>";
+            for(columnIdx in table_cols)
+            {
+                table += "<th>";
+                table += table_cols[columnIdx];
+                table += "</th>";
+            }
+            table += "</tr>";
+
+            table += "</thead>";
+            table += "<tbody>";
+
+            // draw element rows
+            for(targetIdx in targetList)
+            {
+
+                table += "<tr>";
+                for(columnIdx in table_cols)
+                {
+                    if(columnIdx == 0)
+                    {
+                        // by default, sort by the target name in ascending order
+                        table += "<td class=\"sorted ascending\">";
+                    }
+                    else
+                    {
+                        table += "<td>";
+                    }
+
+                    table += targetList[targetIdx][table_cols[columnIdx]];
+                    table += "</td>";
+                }
+                table += "</tr>";
+            }
+
+            table += "</tbody>";
+
+            // replace current contents
+            document.getElementById("datatable").innerHTML = table;
+
+            // resort
+            $("#datatable").tablesort()
+
+        }
+
+        $.getJSON('https://raw.githubusercontent.com/ARMmbed/mbed-os/master/targets/targets.json', function(data) {
+            buildTargetList(data);
+            renderTable();
+        });
+    </script>
+    
+</body>
+</html>
