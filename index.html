@@ -119,6 +119,7 @@
 
         var filtFeatures = [];
         var filtManufacturers = [];
+        for (manu in knownManufacturers) filtManufacturers.push(knownManufacturers[manu]); 
         var newFeatures;
         var newManufacturers;
 
@@ -134,7 +135,7 @@
         function compileFilters() {
             // compile list of filtered features and manufacturers
             filtFeatures = [].concat(filtFeatures, newFeatures);
-            filtManufacturers = [].concat(filtManufacturers, newManufacturers);
+            if (newManufacturers.length) filtManufacturers = filtManufacturers.filter(value => newManufacturers.includes(value));
 
             $("p#activefilters").html(" <b>Features Filtered:</b> " + filtFeatures.join(", ") + "<br>" +
                 " <b>Manufacturers Filtered:</b> " + filtManufacturers.join(", "));
@@ -144,6 +145,7 @@
             // reset all filters
             filtFeatures = [];
             filtManufacturers = [];
+            for (manu in knownManufacturers) filtManufacturers.push(knownManufacturers[manu]); 
             $("p#activefilters").html("");
         }
 
