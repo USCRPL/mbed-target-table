@@ -28,7 +28,7 @@
     <script>
 
         // cols of the table
-        table_cols = ["Target Name", "Manufacturer", "CPU Name", "Supported Features", "Board Components"]
+        table_cols = ["Target Name", "Manufacturer", "CPU Name", "Supported Features", "Board Components", "RAM Size (kiB)", "ROM Size (kiB)"]
 
         var targetList = [];
 
@@ -72,6 +72,17 @@
             "GigaDevice": "GigaDevice",
         }
 
+        // Hexadecimal to Decimal Converter
+        function hexToDec(hex) {
+            var result = 0, digitValue;
+            hex = hex.toLowerCase();
+            for (var i = 2; i < hex.length; i++) {
+                digitValue = '0123456789abcdefgh'.indexOf(hex[i]);
+                result = result * 16 + digitValue;
+            }
+            return result;
+        }
+
         // Copy a single aggregate property over to the definition.
         // These properties can be defined at multiple levels and must be merged together.
         function copyAggregateProperty(definition, definitionPropName, targetJson, targetName, propertyName)
@@ -112,6 +123,14 @@
             if("device_name" in targetJson[targetName])
             {
                 definition["CPU Name"] = targetJson[targetName]["device_name"];
+            }
+            if("mbed_ram_size" in targetJson[targetName])
+            {
+                definition["RAM Size (kiB)"] = parseInt(hexToDec(targetJson[targetName]["mbed_ram_size"])/1000);
+            }
+            if("mbed_rom_size" in targetJson[targetName])
+            {
+                definition["ROM Size (kiB)"] = parseInt(hexToDec(targetJson[targetName]["mbed_rom_size"])/1000);
             }
 
             copyAggregateProperty(definition, "Supported Features", targetJson, targetName, "device_has");
@@ -213,6 +232,18 @@
                     if(!(currCol in targetList[targetIdx]))
                     {
                         // render undefined values as empty string
+                    }
+                    else if(columnIdx == 0)
+                    {
+                        if(columnIdx == 0 && (targetList[targetIdx][table_cols[columnIdx]]).substr(0, 6) == "NUCLEO")
+                        {
+                            var link = "https://os.mbed.com/platforms/ST-Nucleo-" + (targetList[targetIdx][currCol]).substr(7, 6) + "/";
+                            table += "<a href=" + link + ">" + targetList[targetIdx][table_cols[columnIdx]] + "</a>";
+                        }
+                        else
+                        {
+                            table += targetList[targetIdx][currCol];
+                        }
                     }
                     else if(Array.isArray(targetList[targetIdx][currCol]))
                     {
