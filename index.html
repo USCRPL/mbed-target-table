@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -21,6 +21,33 @@
 
 <body>
     <h1> Mbed OS Target Viewer</h1>
+
+    <form action="" method="post" size="10" onsubmit="return false">
+        <label for="features">Filter by Features: <br /> </label>
+        <select id="features" multiple>
+            <option value="ANALOGIN">Analog Inputs</option>
+            <option value="LPTICKER">Low-Power Ticker</option>
+            <option value="I2C">I²C</option>
+            <option value="I2CSLAVE">I²C Slave</option>
+            <option value="INTERRUPTIN">Interrupt Inputs</option>
+            <option value="USTICKER">Microsecond Ticker</option>
+            <option value="PORTIN">Full-Port Input</option>
+            <option value="PORTINOUT">Full-Port I/O</option>
+            <option value="PORTOUT">Full-Port Output</option>
+            <option value="RESET_REASON">Reset Reason</option>
+            <option value="RTC">Real-Time Clock</option>
+            <option value="SERIAL">Serial</option>
+            <option value="SERIAL_FC">Serial Flow Control</option>
+            <option value="SPI">SPI</option>
+            <option value="SPISLAVE">SPI Slave</option>
+            <option value="SPI_ASYNCH">Asynchronous SPI</option>
+            <option value="WATCHDOG" Watchdog Timer></option>
+        </select>
+        <br><br>
+        <input type="submit" onclick="getFeatures()" value="Filter">
+    </form>
+
+    <p> </p>
 
     <h3> Loaded <span id="targetnum">0</span> targets</h3>
     <table id="datatable" class="ui sortable celled table"></table>
@@ -72,6 +99,16 @@
             "GigaDevice": "GigaDevice",
         }
 
+        function displayVals() {
+            var filtFeatures = $("#features").val() || [];
+            // When using jQuery 3:
+            // var multipleValues = $( "#multiple" ).val();
+            $("p").html(" <b>Active Filters:</b> " + filtFeatures.join(", "));
+            return filtFeatures;
+        }
+
+        $("select").change(displayVals);
+
         // Hexadecimal to Decimal Converter
         function hexToDec(hex) {
             var result = 0, digitValue;
@@ -85,21 +122,17 @@
 
         // Copy a single aggregate property over to the definition.
         // These properties can be defined at multiple levels and must be merged together.
-        function copyAggregateProperty(definition, definitionPropName, targetJson, targetName, propertyName)
-        {
+        function copyAggregateProperty(definition, definitionPropName, targetJson, targetName, propertyName) {
             // Property name by itself replaces the current value
-            if(propertyName in targetJson[targetName])
-            {
+            if (propertyName in targetJson[targetName]) {
                 definition[definitionPropName] = targetJson[targetName][propertyName];
             }
             // _add adds to the current value
-            if(propertyName + "_add" in targetJson[targetName])
-            {
+            if (propertyName + "_add" in targetJson[targetName]) {
                 definition[definitionPropName] = definition[definitionPropName].concat(targetJson[targetName][propertyName + "_add"]);
             }
             // _remove subtracts from the current value
-            if(propertyName + "_remove" in targetJson[targetName])
-            {
+            if (propertyName + "_remove" in targetJson[targetName]) {
                 // from here: https://stackoverflow.com/questions/45342155/how-to-subtract-one-array-from-another-element-wise-in-javascript
                 definition[definitionPropName] = definition[definitionPropName].filter(
                     item => !targetJson[targetName][propertyName + "_remove"].includes(item));
@@ -108,29 +141,23 @@
 
         // Copy the relevant data from the JSON definition into the given
         // object.
-        function copyTargetProperties(definition, targetJson, targetName)
-        {
+        function copyTargetProperties(definition, targetJson, targetName) {
             // First handle superclasses of this target.
             // Follows Mbed OS "high to low, left to right" parser order
-            if("inherits" in targetJson[targetName])
-            {
-                for(superclassIdx in targetJson[targetName]["inherits"])
-                {
+            if ("inherits" in targetJson[targetName]) {
+                for (superclassIdx in targetJson[targetName]["inherits"]) {
                     copyTargetProperties(definition, targetJson, targetJson[targetName]["inherits"][superclassIdx]);
                 }
             }
 
-            if("device_name" in targetJson[targetName])
-            {
+            if ("device_name" in targetJson[targetName]) {
                 definition["CPU Name"] = targetJson[targetName]["device_name"];
             }
-            if("mbed_ram_size" in targetJson[targetName])
-            {
-                definition["RAM Size (kiB)"] = parseInt(hexToDec(targetJson[targetName]["mbed_ram_size"])/1000);
+            if ("mbed_ram_size" in targetJson[targetName]) {
+                definition["RAM Size (kiB)"] = parseInt(hexToDec(targetJson[targetName]["mbed_ram_size"]) / 1000);
             }
-            if("mbed_rom_size" in targetJson[targetName])
-            {
-                definition["ROM Size (kiB)"] = parseInt(hexToDec(targetJson[targetName]["mbed_rom_size"])/1000);
+            if ("mbed_rom_size" in targetJson[targetName]) {
+                definition["ROM Size (kiB)"] = parseInt(hexToDec(targetJson[targetName]["mbed_rom_size"]) / 1000);
             }
 
             copyAggregateProperty(definition, "Supported Features", targetJson, targetName, "device_has");
@@ -142,49 +169,50 @@
         // Build the list of targets using the raw JSON file.
         // Resolves inheritance declarations and flattens the tree
         // into a list.
-        function buildTargetList(targetJson)
-        {
-            for(targetName in targetJson)
-            {
+        function buildTargetList(targetJson) {
+            for (targetName in targetJson) {
                 // If the target does not have the "device_name" or "supported_form_factors"
                 // properties then it is a super-type, not an actual target board
-                if(!("device_name" in targetJson[targetName] || "supported_form_factors" in targetJson[targetName]))
-                {
+                if (!("device_name" in targetJson[targetName] || "supported_form_factors" in targetJson[targetName])) {
                     continue;
                 }
 
-                if(targetName == "Target")
-                {
+                if (targetName == "Target") {
                     // Skip default target
                     continue;
                 }
 
-                var targetDefinition = {"Target Name": targetName}
+                var targetDefinition = { "Target Name": targetName }
 
                 copyTargetProperties(targetDefinition, targetJson, targetName);
 
+                var filtFeatures = displayVals();
+                console.log(displayVals());
+
+                // filter out targets that do not have the required features
+                for (feature in filtFeatures) {
+                    if (!(filtFeatures[feature] in targetDefinition["Supported Features"])) {
+                       continue;
+                    }
+                }
+
                 // convert JSON feature names to human readable
-                for(featureIdx in targetDefinition["Supported Features"])
-                {
-                    if(targetDefinition["Supported Features"][featureIdx] in humanReadableFeatureNames)
-                    {
+                for (featureIdx in targetDefinition["Supported Features"]) {
+                    if (targetDefinition["Supported Features"][featureIdx] in humanReadableFeatureNames) {
                         targetDefinition["Supported Features"][featureIdx] = humanReadableFeatureNames[targetDefinition["Supported Features"][featureIdx]];
                     }
                 }
 
                 // Try to figure out the manufacturer from the Extra Features
                 var foundManufacturer = false;
-                for(labelIdx in targetDefinition["Extra Labels"])
-                {
-                    if(targetDefinition["Extra Labels"][labelIdx] in knownManufacturers)
-                    {
+                for (labelIdx in targetDefinition["Extra Labels"]) {
+                    if (targetDefinition["Extra Labels"][labelIdx] in knownManufacturers) {
                         targetDefinition["Manufacturer"] = knownManufacturers[targetDefinition["Extra Labels"][labelIdx]];
                         foundManufacturer = true;
                         break;
                     }
                 }
-                if(!foundManufacturer)
-                {
+                if (!foundManufacturer) {
                     targetDefinition["Manufacturer"] = "";
                 }
 
@@ -192,15 +220,13 @@
             }
         }
 
-        function renderTable()
-        {
+        function renderTable() {
 
             table = "<thead>"
 
             // draw header row
             table += "<tr>";
-            for(columnIdx in table_cols)
-            {
+            for (columnIdx in table_cols) {
                 table += "<th>";
                 table += table_cols[columnIdx];
                 table += "</th>";
@@ -211,49 +237,39 @@
             table += "<tbody>";
 
             // draw element rows
-            for(targetIdx in targetList)
-            {
+            for (targetIdx in targetList) {
 
                 table += "<tr>";
-                for(columnIdx in table_cols)
-                {
-                    if(columnIdx == 1)
-                    {
+                for (columnIdx in table_cols) {
+                    if (columnIdx == 1) {
                         // by default, sort by the manufacturer in ascending order
                         table += "<td class=\"sorted ascending\">";
                     }
-                    else
-                    {
+                    else {
                         table += "<td>";
                     }
 
                     var currCol = table_cols[columnIdx];
 
-                    if(!(currCol in targetList[targetIdx]))
-                    {
+                    if (!(currCol in targetList[targetIdx])) {
                         // render undefined values as empty string
                     }
-                    else if(columnIdx == 0)
-                    {
-                        if(columnIdx == 0 && (targetList[targetIdx][table_cols[columnIdx]]).substr(0, 6) == "NUCLEO")
-                        {
+                    else if (columnIdx == 0) {
+                        if (columnIdx == 0 && (targetList[targetIdx][table_cols[columnIdx]]).substr(0, 6) == "NUCLEO") {
                             var link = "https://os.mbed.com/platforms/ST-Nucleo-" + (targetList[targetIdx][currCol]).substr(7, 6) + "/";
                             table += "<a href=" + link + ">" + targetList[targetIdx][table_cols[columnIdx]] + "</a>";
                         }
-                        else
-                        {
+                        else {
                             table += targetList[targetIdx][currCol];
                         }
                     }
-                    else if(Array.isArray(targetList[targetIdx][currCol]))
-                    {
+                    else if (Array.isArray(targetList[targetIdx][currCol])) {
                         // render arrays as bullet lists
                         table += "<ul>";
                         targetList[targetIdx][currCol].forEach(value => table += "<li>" + value + "</li>");
                         table += "</ul>";
                     }
-                    else
-                    {
+                    else {
                         table += targetList[targetIdx][currCol];
                     }
 
@@ -274,11 +290,11 @@
 
         }
 
-        $.getJSON('https://raw.githubusercontent.com/ARMmbed/mbed-os/master/targets/targets.json', function(data) {
+        $.getJSON('https://raw.githubusercontent.com/ARMmbed/mbed-os/master/targets/targets.json', function (data) {
             buildTargetList(data);
             renderTable();
         });
     </script>
-    
+
 </body>
 </html>
