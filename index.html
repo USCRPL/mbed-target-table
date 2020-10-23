@@ -49,7 +49,8 @@
         </div>
     </div>
 
-    <input type="submit" onclick="renderTable()" value="Filter">
+    <input type="submit" onclick="compileFilters(), renderTable()" value="Filter">
+    <input type="submit" onclick="clearFilters(), renderTable()" value="Clear Filters">
 
     <p id="activefilters"> </p>
 
@@ -116,17 +117,35 @@
             "GigaDevice": "GigaDevice",
         }
 
-        var filtFeatures;
-        var filtManufacturers;
+        var filtFeatures = [];
+        var filtManufacturers = [];
+        var newFeatures;
+        var newManufacturers;
+
         function displayVals() {
-            filtFeatures = $("#features").val() || [];
-            filtManufacturers = $("#manufacturers").val() || [];
+            newFeatures = $("#features").val() || [];
+            newManufacturers = $("#manufacturers").val() || [];
             // When using jQuery 3:
             // var multipleValues = $( "#multiple" ).val();
-            $("p#activefilters").html(" <b>Active Filters:</b> " + filtFeatures.join(", ") + ", " + filtManufacturers.join(", "));
         }
 
         $("select").change(displayVals);
+
+        function compileFilters() {
+            // compile list of filtered features and manufacturers
+            filtFeatures = [].concat(filtFeatures, newFeatures);
+            filtManufacturers = [].concat(filtManufacturers, newManufacturers);
+
+            $("p#activefilters").html(" <b>Features Filtered:</b> " + filtFeatures.join(", ") + "<br>" +
+                " <b>Manufacturers Filtered:</b> " + filtManufacturers.join(", "));
+        }
+
+        function clearFilters() {
+            // reset all filters
+            filtFeatures = [];
+            filtManufacturers = [];
+            $("p#activefilters").html("");
+        }
 
         // Hexadecimal to Decimal Converter
         function hexToDec(hex) {
@@ -277,7 +296,8 @@
                 for (feature in targetList[targetIdx]["Supported Features"]) {
                     var option = document.createElement('option');
                     option.text = option.value = targetList[targetIdx]["Supported Features"][feature];
-                    if (!optionsFeature.includes(option.outerHTML)) {
+                    if (!optionsFeature.includes(option.outerHTML)
+                        && !filtFeatures.includes(targetList[targetIdx]["Supported Features"][feature])) {
                         optionsFeature.push(option.outerHTML);
                     }
                 }
