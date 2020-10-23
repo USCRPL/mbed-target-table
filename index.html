@@ -26,30 +26,17 @@
 <body>
     <h1> Mbed OS Target Viewer</h1>
 
-    <form action="" method="post" size="10" onsubmit="return false">
-        <label for="features">Filter by Features: <br /> </label>
-        <select id="features" multiple>
-            <option value="Analog Inputs">Analog Inputs</option>
-            <option value="Low-Power Ticker">Low-Power Ticker</option>
-            <option value="I²C">I²C</option>
-            <option value="I²C Slave">I²C Slave</option>
-            <option value="Interrupt Inputs">Interrupt Inputs</option>
-            <option value="Microsecond Ticker">Microsecond Ticker</option>
-            <option value="Full-Port Input">Full-Port Input</option>
-            <option value="Full-Port I/O">Full-Port I/O</option>
-            <option value="Full-Port Output">Full-Port Output</option>
-            <option value="Reset Reason">Reset Reason</option>
-            <option value="Real-Time Clock">Real-Time Clock</option>
-            <option value="Serial">Serial</option>
-            <option value="Serial Flow Control">Serial Flow Control</option>
-            <option value="SPI">SPI</option>
-            <option value="SPI Slave">SPI Slave</option>
-            <option value="Asynchronous SPI">Asynchronous SPI</option>
-            <option value="Watchdog Timer">Watchdog Timer</option>
-        </select>
-        <br><br>
-        <input type="submit" onclick="renderTable()" value="Filter">
-    </form>
+    <label for="features">Filter by Features: <br /> </label>
+    <select id="features" multiple>
+    </select>
+    <br><br>
+
+    <label for="manufacturers">Filter by Manufaturer: <br /> </label>
+    <select id="manufacturers" multiple>
+    </select>
+    <br><br>
+
+    <input type="submit" onclick="renderTable()" value="Filter">
 
     <p id="activefilters"> </p>
 
@@ -104,11 +91,13 @@
         }
 
         var filtFeatures;
+        var filtManufacturers;
         function displayVals() {
             filtFeatures = $("#features").val() || [];
+            filtManufacturers = $("#manufacturers").val() || [];
             // When using jQuery 3:
             // var multipleValues = $( "#multiple" ).val();
-            $("p#activefilters").html(" <b>Active Filters:</b> " + filtFeatures.join(", "));
+            $("p#activefilters").html(" <b>Active Filters:</b> " + filtFeatures.join(", ") + ", " + filtManufacturers.join(", "));
         }
 
         $("select").change(displayVals);
@@ -236,21 +225,45 @@
 
             var matchedTargets = 0;
 
+            var selectFeature = document.getElementById("features");
+            var optionsFeature = [];
+
+            var selectManu = document.getElementById("manufacturers");
+            var optionsManu = [];
+
             // draw element rows
-            for (targetIdx in targetList) 
-            {
+            for (targetIdx in targetList) {
                 // filter out targets that do not have the required features
-                var missingFeatures = false;
+                var missingQuals = false;
                 for (feature in filtFeatures) {
                     if (!targetList[targetIdx]["Supported Features"].includes(filtFeatures[feature])) {
-                       missingFeatures = true;
-                       break;
+                        missingQuals = true;
+                        break;
                     }
                 }
-                if(missingFeatures)
-                {
+                if (!filtManufacturers.includes(targetList[targetIdx]["Manufacturer"]) && filtManufacturers.length) {
+                    missingQuals = true;
+                }
+                if (missingQuals) {
                     continue;
                 }
+
+                // remake feature selection form based on the supported features within the selection
+                for (feature in targetList[targetIdx]["Supported Features"]) {
+                    var option = document.createElement('option');
+                    option.text = option.value = targetList[targetIdx]["Supported Features"][feature];
+                    if (!optionsFeature.includes(option.outerHTML)) {
+                        optionsFeature.push(option.outerHTML);
+                    }
+                }
+
+                // remake manufacturer selection form based on the supported features within the selection
+                var option = document.createElement('option');
+                option.text = option.value = targetList[targetIdx]["Manufacturer"];
+                if (!optionsManu.includes(option.outerHTML)) {
+                    optionsManu.push(option.outerHTML);
+                }
+
 
                 matchedTargets++;
                 table += "<tr>";
@@ -302,6 +315,15 @@
             $("#datatable").tablesort()
             $("#datatable>thead>tr>th:nth-child(2)").trigger("click");
 
+            // clear and remake feature selection form
+            var i, L = selectFeature.options.length - 1;
+            for (i = L; i >= 0; i--) selectFeature.remove(i);
+            selectFeature.insertAdjacentHTML('beforeEnd', optionsFeature.join('\n'));
+
+            // clear and remake manufacturer selection form
+            var i, L = selectManu.options.length - 1;
+            for (i = L; i >= 0; i--) selectManu.remove(i);
+            selectManu.insertAdjacentHTML('beforeEnd', optionsManu.join('\n'));
         }
 
         $.getJSON('https://raw.githubusercontent.com/ARMmbed/mbed-os/master/targets/targets.json', function (data) {
