@@ -66,36 +66,44 @@
 
         // Maps JSON name of feature to a human readable form
         var humanReadableFeatureNames = {
-            "802_15_4_PHY": "802.15.4 Radio", // TODO: is this accurate?
+            "802_15_4_PHY": "802.15.4 Radio",
             "ANALOGIN": "Analog Inputs",
             "ANALOGOUT": "Analog Outputs",
             "CAN": "CAN",
+            "CRC": "Hardware CRC",
             "DEBUG_AWARENESS": "Semihost Detectable",
             "EMAC": "Ethernet MAC",
+            "ERROR_RED": "Uses Red Error LED",
             "ETHERNET": "Ethernet PHY", // TODO: ignore this one since it is not accurate
             "FLASH": "Onboard Flash",
-            "LOCALFILESYSTEM": "MBED Disk Access from App",
-            "LPTICKER": "Low-Power Ticker",
             "I2C": "I²C",
             "I2CSLAVE": "I²C Slave",
             "I2C_ASYNCH": "Asynchronous I²C",
             "INTERRUPTIN": "Interrupt Inputs",
-            "USTICKER": "Microsecond Ticker",
+            "ITM": "ITM Data Transmission",
+            "LOCALFILESYSTEM": "Mbed Disk Access from App",
+            "LPTICKER": "Low-Power Ticker",
+            "MPU": "Memory Protection Unit",
+            "OSPI": "Octo SPI",
             "PORTIN": "Full-Port Input",
             "PORTINOUT": "Full-Port I/O",
             "PORTOUT": "Full-Port Output",
             "PWMOUT": "PWM Out",
+            "QSPI": "Quad SPI",
             "RESET_REASON": "Reset Reason",
             "RTC": "Real-Time Clock",
             "SEMIHOST": "Semihost", // TODO: ignore this one since it is not accurate
             "SERIAL": "Serial",
+            "SERIAL_ASYNCH": "Asynchronous Serial",
             "SERIAL_FC": "Serial Flow Control",
             "SLEEP": "Sleep",
             "SPI": "SPI",
             "SPISLAVE": "SPI Slave",
             "SPI_ASYNCH": "Asynchronous SPI",
-            "STDIO_MESSAGES": "Stdout",
+            "STDIO_MESSAGES": "Provides C Stdout",
+            "TRNG": "Hardware RNG",
             "USBDEVICE": "USB Device",
+            "USTICKER": "Microsecond Ticker",
             "WATCHDOG": "Watchdog Timer",
         }
 
@@ -117,6 +125,59 @@
             "GigaDevice": "GigaDevice",
         }
 
+        // Categories that features are sorted into
+        var featureCategories = {
+          "Communications Busses": [
+             "CAN",
+             "I²C",
+             "I²C Slave",
+             "Asynchronous I²C",
+             "Serial",
+             "Asynchronous Serial",
+             "Serial Flow Control",
+             "SPI",
+             "Quad SPI",
+             "USB Device",
+          ],
+          "Network": [
+            "Ethernet MAC",
+            "802.15.4 Radio",
+          ],
+          "Processor Pins": [
+            "Analog Inputs",
+            "Analog Outputs",
+            "Interrupt Inputs",
+            "Full-Port Input",
+            "Full-Port I/O",
+            "Full-Port Output",
+            "PWM Out",
+          ],
+          "Processor Features": [
+            "Hardware CRC",
+            "Low-Power Ticker",
+            "Memory Protection Unit",
+            "Reset Reason",
+            "Real-Time Clock",
+            "Hardware RNG",
+            "Microsecond Ticker",
+            "Watchdog Timer",
+          ],
+          "Misc Features": [ // Any other stuff (newly added features?) not in any of the other lists should go here
+            "Onboard Flash",
+            "ITM Data Transmission",
+            "Mbed Disk Access from App",
+            "Provides C Stdout",
+          ],
+          "Disabled": [ // things that are known inaccurate and are not displayed at all
+            "Octo SPI", // exists on some STM32 processors but is not currently supported by Mbed OS
+            "Semihost Detectable", // only true for one processor?  And does anyone really care?
+            "Uses Red Error LED", // Noone cares it it has one error LED or 4.  Also seems to be deprecated?
+            "Ethernet PHY", // Not accurate at all, misses loads of STM32 boards
+            "Semihost", // Not accurate I think?
+            "SYSTICK_CLOCK_OFF_DURING_SLEEP", // Literally no idea what this does.  Used nowhere in the code.
+          ]
+        };
+
         var filtFeatures = [];
         var filtManufacturers = [];
         for (manu in knownManufacturers) filtManufacturers.push(knownManufacturers[manu]); 
@@ -126,8 +187,6 @@
         function displayVals() {
             newFeatures = $("#features").val() || [];
             newManufacturers = $("#manufacturers").val() || [];
-            // When using jQuery 3:
-            // var multipleValues = $( "#multiple" ).val();
         }
 
         $("select").change(displayVals);
