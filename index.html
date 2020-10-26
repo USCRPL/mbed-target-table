@@ -59,9 +59,6 @@
 
     <script>
 
-        // cols of the table
-        table_cols = ["Target Name", "Manufacturer", "CPU Name", "Supported Features", "Board Components", "RAM Size (kiB)", "ROM Size (kiB)"]
-
         var targetList = [];
 
         // Maps JSON name of feature to a human readable form
@@ -127,7 +124,7 @@
 
         // Categories that features are sorted into
         var featureCategories = {
-          "Communications Busses": [
+          "Communications Buses": [
              "CAN",
              "I²C",
              "I²C Slave",
@@ -177,6 +174,11 @@
             "SYSTICK_CLOCK_OFF_DURING_SLEEP", // Literally no idea what this does.  Used nowhere in the code.
           ]
         };
+
+        // cols of the table
+        table_cols = ["Target Name", "Manufacturer", "CPU Name"];
+        for (category in featureCategories) table_cols.push(category);
+        table_cols = [].concat(table_cols, ["Board Components", "RAM Size (kiB)", "ROM Size (kiB)"]);
 
         var filtFeatures = [];
         var filtManufacturers = [];
@@ -263,6 +265,7 @@
             copyAggregateProperty(definition, "Board Components", targetJson, targetName, "components");
             copyAggregateProperty(definition, "Extra Labels", targetJson, targetName, "extra_labels");
 
+            for (category in featureCategories) definition[category] = [];
         }
 
         // Build the list of targets using the raw JSON file.
@@ -291,6 +294,14 @@
                 for (featureIdx in targetDefinition["Supported Features"]) {
                     if (targetDefinition["Supported Features"][featureIdx] in humanReadableFeatureNames) {
                         targetDefinition["Supported Features"][featureIdx] = humanReadableFeatureNames[targetDefinition["Supported Features"][featureIdx]];
+                    }
+                    // divide Supported Features into feature categories
+                    for (category in featureCategories) {
+                        for (i in category) {
+                            if (targetDefinition["Supported Features"][featureIdx] == featureCategories[category][i]) {
+                                targetDefinition[category].push(targetDefinition["Supported Features"][featureIdx]);
+                            }
+                        }
                     }
                 }
 
