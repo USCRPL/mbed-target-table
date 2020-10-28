@@ -35,15 +35,10 @@
     <h1> Mbed OS Target Viewer</h1>
 
     <div id="filter-container">
+        <div id="featurefiltering"> </div>
 
         <div>
-            <label for="features">Filter by Features: <br /> </label>
-            <select id="features" multiple>
-            </select>
-        </div>
-
-        <div>
-            <label for="manufacturers">Filter by Manufaturer: <br /> </label>
+            <label for="manufacturers">Filter by Manufacturer: <br /> </label>
             <select id="manufacturers" multiple>
             </select>
         </div>
@@ -124,7 +119,7 @@
 
         // Categories that features are sorted into
         var featureCategories = {
-          "Communications Buses": [
+          "Communications": [
              "CAN",
              "I²C",
              "I²C Slave",
@@ -140,7 +135,7 @@
             "Ethernet MAC",
             "802.15.4 Radio",
           ],
-          "Processor Pins": [
+          "Pins": [
             "Analog Inputs",
             "Analog Outputs",
             "Interrupt Inputs",
@@ -149,7 +144,7 @@
             "Full-Port Output",
             "PWM Out",
           ],
-          "Processor Features": [
+          "Processor": [
             "Hardware CRC",
             "Low-Power Ticker",
             "Memory Protection Unit",
@@ -159,7 +154,7 @@
             "Microsecond Ticker",
             "Watchdog Timer",
           ],
-          "Misc Features": [ // Any other stuff (newly added features?) not in any of the other lists should go here
+          "Miscellaneous": [ // Any other stuff (newly added features?) not in any of the other lists should go here
             "Onboard Flash",
             "ITM Data Transmission",
             "Mbed Disk Access from App",
@@ -177,17 +172,33 @@
 
         // cols of the table
         table_cols = ["Target Name", "Manufacturer", "CPU Name"];
-        for (category in featureCategories) table_cols.push(category);
+
+        // automatically create new selection forms 
+        var selectionCreator = "";
+        for (category in featureCategories) {
+            table_cols.push(category);
+            selectionCreator += "<label for= \"" + category +
+                "\">Filter by " + category + ": <br /> </label> <select id = \"" +
+                category + "\" multiple></select></br>";
+        }
+        $("div#featurefiltering").html(selectionCreator);
+
         table_cols = [].concat(table_cols, ["Board Components", "RAM Size (kiB)", "ROM Size (kiB)"]);
 
-        var filtFeatures = [];
+        var filtFeatures = {};
         var filtManufacturers = [];
+        var newFeatures = {};
+
+        for (category in featureCategories) {
+            filtFeatures[category] = [];
+            newFeatures[category] = [];
+        }
         for (manu in knownManufacturers) filtManufacturers.push(knownManufacturers[manu]); 
-        var newFeatures;
+
         var newManufacturers;
 
         function displayVals() {
-            newFeatures = $("#features").val() || [];
+            for (category in featureCategories) newFeatures[category] = $("#" + category).val() || [];
             newManufacturers = $("#manufacturers").val() || [];
         }
 
@@ -195,16 +206,19 @@
 
         function compileFilters() {
             // compile list of filtered features and manufacturers
-            filtFeatures = [].concat(filtFeatures, newFeatures);
+            var filtText = "";
+            for (category in featureCategories) {
+                filtFeatures[category] = [].concat(filtFeatures[category], newFeatures[category]);
+                if (filtFeatures[category].length) filtText += "," + filtFeatures[category].join();
+            }
             if (newManufacturers.length) filtManufacturers = filtManufacturers.filter(value => newManufacturers.includes(value));
-
-            $("p#activefilters").html(" <b>Features Filtered:</b> " + filtFeatures.join(", ") + "<br>" +
+            $("p#activefilters").html(" <b>Features Filtered:</b> " + filtText + "<br>" +
                 " <b>Manufacturers Filtered:</b> " + filtManufacturers.join(", "));
         }
 
         function clearFilters() {
             // reset all filters
-            filtFeatures = [];
+            for (category in featureCategories) filtFeatures[category] = [];
             filtManufacturers = [];
             for (manu in knownManufacturers) filtManufacturers.push(knownManufacturers[manu]); 
             $("p#activefilters").html("");
@@ -341,8 +355,10 @@
 
             var matchedTargets = 0;
 
-            var selectFeature = document.getElementById("features");
-            var optionsFeature = [];
+            var selectFeature = {};
+            for (category in featureCategories) selectFeature[category] = document.getElementById(category);
+            var optionsFeature = {};
+            for (category in featureCategories) optionsFeature[category] = [];
 
             var selectManu = document.getElementById("manufacturers");
             var optionsManu = [];
@@ -351,10 +367,12 @@
             for (targetIdx in targetList) {
                 // filter out targets that do not have the required features
                 var missingQuals = false;
-                for (feature in filtFeatures) {
-                    if (!targetList[targetIdx]["Supported Features"].includes(filtFeatures[feature])) {
-                        missingQuals = true;
-                        break;
+                for (category in featureCategories) {
+                    for (feature in filtFeatures[category]) {
+                        if (!targetList[targetIdx][category].includes(filtFeatures[category][feature])) {
+                            missingQuals = true;
+                            break;
+                        }
                     }
                 }
                 if (!filtManufacturers.includes(targetList[targetIdx]["Manufacturer"]) && filtManufacturers.length) {
@@ -365,12 +383,14 @@
                 }
 
                 // remake feature selection form based on the supported features within the selection
-                for (feature in targetList[targetIdx]["Supported Features"]) {
-                    var option = document.createElement('option');
-                    option.text = option.value = targetList[targetIdx]["Supported Features"][feature];
-                    if (!optionsFeature.includes(option.outerHTML)
-                        && !filtFeatures.includes(targetList[targetIdx]["Supported Features"][feature])) {
-                        optionsFeature.push(option.outerHTML);
+                for (category in featureCategories) {
+                    for (feature in targetList[targetIdx][category]) {
+                        var option = document.createElement('option');
+                        option.text = option.value = targetList[targetIdx][category][feature];
+                    
+                        if (!optionsFeature[category].includes(option.outerHTML)) {
+                            optionsFeature[category].push(option.outerHTML);
+                        }
                     }
                 }
 
@@ -433,9 +453,11 @@
             $("#datatable>thead>tr>th:nth-child(2)").trigger("click");
 
             // clear and remake feature selection form
-            var i, L = selectFeature.options.length - 1;
-            for (i = L; i >= 0; i--) selectFeature.remove(i);
-            selectFeature.insertAdjacentHTML('beforeEnd', optionsFeature.join('\n'));
+            for (category in featureCategories) {
+                var i, L = selectFeature[category].options.length - 1;
+                for (i = L; i >= 0; i--) selectFeature[category].remove(i);
+                selectFeature[category].insertAdjacentHTML('beforeEnd', optionsFeature[category].join('\n'));
+            }
 
             // clear and remake manufacturer selection form
             var i, L = selectManu.options.length - 1;
