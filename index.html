@@ -212,7 +212,14 @@
             var filtText = "";
             for (category in featureCategories) {
                 filtFeatures[category] = [].concat(filtFeatures[category], newFeatures[category]);
-                if (filtFeatures[category].length) filtText += "," + filtFeatures[category].join();
+                if (filtFeatures[category].length > 0)
+                {
+                    if(filtText !== "")
+                    {
+                        filtText += ", ";
+                    }
+                    filtText += filtFeatures[category].join();
+                }
             }
             if (newManufacturers.length) filtManufacturers = filtManufacturers.filter(value => newManufacturers.includes(value));
             $("p#activefilters").html(" <b>Features Filtered:</b> " + filtText + "<br>" +
