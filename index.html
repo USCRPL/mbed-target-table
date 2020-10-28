@@ -135,13 +135,13 @@
             "Ethernet MAC",
             "802.15.4 Radio",
           ],
-          "Pins": [
-            "Analog Inputs",
-            "Analog Outputs",
-            "Interrupt Inputs",
+          "Inputs/Outputs": [
             "Full-Port Input",
             "Full-Port I/O",
             "Full-Port Output",
+            "Analog Inputs",
+            "Analog Outputs",
+            "Interrupt Inputs",
             "PWM Out",
           ],
           "Processor": [
@@ -166,7 +166,7 @@
             "Uses Red Error LED", // Noone cares it it has one error LED or 4.  Also seems to be deprecated?
             "Ethernet PHY", // Not accurate at all, misses loads of STM32 boards
             "Semihost", // Not accurate I think?
-            "SYSTICK_CLOCK_OFF_DURING_SLEEP", // Literally no idea what this does.  Used nowhere in the code.
+            "SYSTICK_CLK_OFF_DURING_SLEEP", // Literally no idea what this does.  Used nowhere in the code.
           ]
         };
 
@@ -176,6 +176,7 @@
         // automatically create new selection forms and add new table columns
         var selectionCreator = "";
         for (category in featureCategories) {
+            if (category == "Disabled") continue;
             table_cols.push(category);
             selectionCreator += "<div><label for= \"" + category +
                 "\">Filter by " + category + ": <br /> </label> <select id = \"" +
@@ -192,6 +193,7 @@
         var newFeatures = {};
         // create data structures for filtering features
         for (category in featureCategories) {
+            if (category == "Disabled") continue;
             filtFeatures[category] = [];
             newFeatures[category] = [];
         }
@@ -201,7 +203,10 @@
 
         // live updater for highlighted features
         function displayVals() {
-            for (category in featureCategories) newFeatures[category] = $("#" + category).val() || [];
+            for (category in featureCategories) {
+                if (category == "Disabled") continue;
+                newFeatures[category] = $("#" + category).val() || [];
+            }
             newManufacturers = $("#manufacturers").val() || [];
         }
 
@@ -211,6 +216,7 @@
             // compile list of filtered features and manufacturers
             var filtText = "";
             for (category in featureCategories) {
+                if (category == "Disabled") continue;
                 filtFeatures[category] = [].concat(filtFeatures[category], newFeatures[category]);
                 if (filtFeatures[category].length > 0)
                 {
@@ -228,7 +234,10 @@
 
         function clearFilters() {
             // reset all filters
-            for (category in featureCategories) filtFeatures[category] = [];
+            for (category in featureCategories) {
+                if (category == "Disabled") continue;
+                filtFeatures[category] = [];
+            }
             filtManufacturers = [];
             for (manu in knownManufacturers) filtManufacturers.push(knownManufacturers[manu]); 
             $("p#activefilters").html("");
@@ -312,21 +321,22 @@
 
                 copyTargetProperties(targetDefinition, targetJson, targetName);
 
-                var filtFeatures = displayVals();
-
                 // convert JSON feature names to human readable
                 for (featureIdx in targetDefinition["Supported Features"]) {
                     if (targetDefinition["Supported Features"][featureIdx] in humanReadableFeatureNames) {
                         targetDefinition["Supported Features"][featureIdx] = humanReadableFeatureNames[targetDefinition["Supported Features"][featureIdx]];
                     }
+                    var foundCategory = false;
                     // divide Supported Features into feature categories
                     for (category in featureCategories) {
                         for (i in category) {
                             if (targetDefinition["Supported Features"][featureIdx] == featureCategories[category][i]) {
                                 targetDefinition[category].push(targetDefinition["Supported Features"][featureIdx]);
+                                foundCategory = true;
                             }
                         }
                     }
+                    if (!foundCategory) targetDefinition["Miscellaneous"].push(targetDefinition["Supported Features"][featureIdx]);
                 }
 
                 // Try to figure out the manufacturer from the Extra Features
@@ -366,9 +376,15 @@
             var matchedTargets = 0;
 
             var selectFeature = {};
-            for (category in featureCategories) selectFeature[category] = document.getElementById(category);
+            for (category in featureCategories) {
+                if (category == "Disabled") continue;
+                selectFeature[category] = document.getElementById(category);
+            }
             var optionsFeature = {};
-            for (category in featureCategories) optionsFeature[category] = [];
+            for (category in featureCategories) {
+                if (category == "Disabled") continue;
+                optionsFeature[category] = [];
+            }
 
             var selectManu = document.getElementById("manufacturers");
             var optionsManu = [];
@@ -378,6 +394,7 @@
                 // filter out targets that do not have the required features
                 var missingQuals = false;
                 for (category in featureCategories) {
+                    if (category == "Disabled") continue;
                     for (feature in filtFeatures[category]) {
                         if (!targetList[targetIdx][category].includes(filtFeatures[category][feature])) {
                             missingQuals = true;
@@ -394,6 +411,7 @@
 
                 // remake feature selection form based on the supported features within the selection
                 for (category in featureCategories) {
+                    if (category == "Disabled") continue;
                     for (feature in targetList[targetIdx][category]) {
                         var option = document.createElement('option');
                         option.text = option.value = targetList[targetIdx][category][feature];
@@ -464,6 +482,7 @@
 
             // clear and remake feature selection form
             for (category in featureCategories) {
+                if (category == "Disabled") continue;
                 var i, L = selectFeature[category].options.length - 1;
                 for (i = L; i >= 0; i--) selectFeature[category].remove(i);
                 selectFeature[category].insertAdjacentHTML('beforeEnd', optionsFeature[category].join('\n'));
