@@ -173,22 +173,24 @@
         // cols of the table
         table_cols = ["Target Name", "Manufacturer", "CPU Name"];
 
-        // automatically create new selection forms 
+        // automatically create new selection forms and add new table columns
         var selectionCreator = "";
         for (category in featureCategories) {
             table_cols.push(category);
-            selectionCreator += "<label for= \"" + category +
+            selectionCreator += "<div><label for= \"" + category +
                 "\">Filter by " + category + ": <br /> </label> <select id = \"" +
-                category + "\" multiple></select></br>";
+                category + "\" multiple></select></div>";
         }
-        $("div#featurefiltering").html(selectionCreator);
+        selectionCreator += "<div><label for=\"manufacturers\">Filter by Manufacturer: <br /> </label><select id=\"manufacturers\" multiple></select></div>"
+        $("div#filter-container").html(selectionCreator);
 
+        // add last few table cols
         table_cols = [].concat(table_cols, ["Board Components", "RAM Size (kiB)", "ROM Size (kiB)"]);
 
         var filtFeatures = {};
         var filtManufacturers = [];
         var newFeatures = {};
-
+        // create data structures for filtering features
         for (category in featureCategories) {
             filtFeatures[category] = [];
             newFeatures[category] = [];
@@ -197,6 +199,7 @@
 
         var newManufacturers;
 
+        // live updater for highlighted features
         function displayVals() {
             for (category in featureCategories) newFeatures[category] = $("#" + category).val() || [];
             newManufacturers = $("#manufacturers").val() || [];
