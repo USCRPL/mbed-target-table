@@ -119,8 +119,8 @@
 
         // Categories that features are sorted into
         var featureCategories = {
-          "Mbed OS Type": [
-             "Bare Metal",
+          "Functionality": [
+             "Mbed Bare Metal",
              "Mbed RTOS"
           ],
           "Communications": [
@@ -352,14 +352,14 @@
                 // handle Bare Metal and RTOS, which are not defined as normal features for some reason
                 if("Supported Application Profiles" in targetDefinition)
                 {
-                    targetDefinition["Mbed OS Type"] = []
+                    targetDefinition["Functionality"] = []
                     if(targetDefinition["Supported Application Profiles"].includes("bare-metal"))
                     {
-                        targetDefinition["Mbed OS Type"].push("Bare Metal");
+                        targetDefinition["Functionality"].push("Mbed Bare Metal");
                     }
                     if(targetDefinition["Supported Application Profiles"].includes("full"))
                     {
-                        targetDefinition["Mbed OS Type"].push("Mbed RTOS");
+                        targetDefinition["Functionality"].push("Mbed RTOS");
                     }
                 }
 
