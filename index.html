@@ -141,7 +141,7 @@
             "Ethernet MAC",
             "802.15.4 Radio",
           ],
-          "Inputs/Outputs": [
+          "Pins": [
             "Full-Port Input",
             "Full-Port I/O",
             "Full-Port Output",
@@ -339,7 +339,7 @@
                     var foundCategory = false;
                     // divide Supported Features into feature categories
                     for (category in featureCategories) {
-                        for (i in category) {
+                        for (i in featureCategories[category]) {
                             if (targetDefinition["Supported Features"][featureIdx] == featureCategories[category][i]) {
                                 targetDefinition[category].push(targetDefinition["Supported Features"][featureIdx]);
                                 foundCategory = true;
