@@ -119,6 +119,10 @@
 
         // Categories that features are sorted into
         var featureCategories = {
+          "Mbed OS Type": [
+             "Bare Metal",
+             "Mbed RTOS"
+          ],
           "Communications": [
              "CAN",
              "I²C",
@@ -295,6 +299,10 @@
             if ("mbed_rom_size" in targetJson[targetName]) {
                 definition["ROM Size (kiB)"] = parseInt(hexToDec(targetJson[targetName]["mbed_rom_size"]) / 1000);
             }
+            if("supported_application_profiles" in targetJson[targetName])
+            {
+                definition["Supported Application Profiles"] = targetJson[targetName]["supported_application_profiles"];
+            }
 
             copyAggregateProperty(definition, "Supported Features", targetJson, targetName, "device_has");
             copyAggregateProperty(definition, "Board Components", targetJson, targetName, "components");
@@ -339,6 +347,20 @@
                         }
                     }
                     if (!foundCategory) targetDefinition["Miscellaneous"].push(targetDefinition["Supported Features"][featureIdx]);
+                }
+
+                // handle Bare Metal and RTOS, which are not defined as normal features for some reason
+                if("Supported Application Profiles" in targetDefinition)
+                {
+                    targetDefinition["Mbed OS Type"] = []
+                    if(targetDefinition["Supported Application Profiles"].includes("bare-metal"))
+                    {
+                        targetDefinition["Mbed OS Type"].push("Bare Metal");
+                    }
+                    if(targetDefinition["Supported Application Profiles"].includes("full"))
+                    {
+                        targetDefinition["Mbed OS Type"].push("Mbed RTOS");
+                    }
                 }
 
                 // Try to figure out the manufacturer from the Extra Features
