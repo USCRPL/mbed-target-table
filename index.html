@@ -475,6 +475,11 @@
                             var link = "https://os.mbed.com/platforms/ST-Nucleo-" + (targetList[targetIdx][currCol]).substr(7, 6) + "/";
                             table += "<a href=" + link + ">" + targetList[targetIdx][table_cols[columnIdx]] + "</a>";
                         }
+                        else if (columnIdx == 0) {
+                            var link = "https://os.mbed.com/platforms/" + (targetList[targetIdx][currCol]) + "/";
+                            link = link.replace(/_/g, '-');
+                            table += "<a href=" + link + ">" + targetList[targetIdx][table_cols[columnIdx]] + "</a>";
+                        }
                         else {
                             table += targetList[targetIdx][currCol];
                         }
